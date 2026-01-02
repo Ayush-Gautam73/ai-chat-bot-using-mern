@@ -1,13 +1,13 @@
 
 # AI Chatbot Using MERN Stack
 
-A full-stack AI chatbot application built with the MERN stack (MongoDB, Express.js, React, Node.js) and TypeScript. Features user authentication, real-time chat functionality, and a custom AI response system.
+A full-stack AI chatbot application built with the MERN stack (MongoDB, Express.js, React, Node.js) and TypeScript. Features user authentication, real-time chat functionality, and **Google Gemini AI** integration.
 
 ## Features
 
 - 🔐 **User Authentication**: Secure signup/login with JWT tokens
 - 💬 **Real-time Chat**: Interactive chat interface with message history
-- 🤖 **Custom AI Responses**: Intelligent contextual responses without external API dependencies
+- 🤖 **Google Gemini AI**: Powered by Google's advanced Gemini 1.5 Flash model
 - 🎨 **Modern UI**: Clean, responsive interface built with Material-UI
 - 🔒 **Secure**: Cookie-based authentication with bcrypt password hashing
 - 📱 **Responsive**: Works seamlessly on desktop and mobile devices
@@ -28,7 +28,7 @@ A full-stack AI chatbot application built with the MERN stack (MongoDB, Express.
 - MongoDB with Mongoose ODM
 - JWT for authentication
 - Bcrypt for password hashing
-- Custom chat response system
+- **Google Gemini AI** for intelligent responses
 
 ## Quick Start
 
@@ -36,6 +36,7 @@ A full-stack AI chatbot application built with the MERN stack (MongoDB, Express.
 - Node.js (v18 or higher)
 - MongoDB (local installation or MongoDB Atlas)
 - Git
+- **Google Gemini API Key** (free from https://makersuite.google.com/app/apikey)
 
 ### Installation
 

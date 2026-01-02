@@ -1,76 +1,88 @@
-// Custom chat service configuration
+import { GoogleGenerativeAI } from "@google/generative-ai";
+
+// Chat message interface
 export interface ChatMessage {
-  role: 'user' | 'assistant' | 'system';
+  role: 'user' | 'assistant' | 'system' | 'model';
   content: string;
 }
 
-export class CustomChatService {
-  private responses = [
-    "That's an interesting question! Let me think about that.",
-    "I understand what you're asking. Here's my perspective:",
-    "Great question! Based on what you've told me, I would suggest:",
-    "That's a thoughtful inquiry. Here are some ideas:",
-    "I see what you mean. Let me provide some insights:",
-    "Excellent point! Here's how I would approach this:",
-    "Thanks for sharing that with me. My response would be:",
-    "I appreciate your question. Here's what I think:"
-  ];
+// Gemini AI Chat Service
+export class GeminiChatService {
+  private genAI: GoogleGenerativeAI;
+  private model: any;
 
-  private getRandomResponse(): string {
-    const randomIndex = Math.floor(Math.random() * this.responses.length);
-    return this.responses[randomIndex];
-  }
-
-  private generateContextualResponse(message: string, _chatHistory: ChatMessage[]): string {
-    const lowerMessage = message.toLowerCase();
-    
-    // Simple keyword-based responses
-    if (lowerMessage.includes('hello') || lowerMessage.includes('hi')) {
-      return "Hello! How can I help you today?";
+  constructor() {
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey || apiKey === 'your-gemini-api-key-here') {
+      console.warn("⚠️ GEMINI_API_KEY not configured. Using fallback responses.");
     }
-    if (lowerMessage.includes('how are you')) {
-      return "I'm doing well, thank you for asking! How are you?";
-    }
-    if (lowerMessage.includes('what') && lowerMessage.includes('name')) {
-      return "I'm your AI assistant! You can call me ChatBot.";
-    }
-    if (lowerMessage.includes('help')) {
-      return "I'm here to help! Feel free to ask me any questions you have.";
-    }
-    if (lowerMessage.includes('thank')) {
-      return "You're welcome! Is there anything else I can help you with?";
-    }
-    if (lowerMessage.includes('bye') || lowerMessage.includes('goodbye')) {
-      return "Goodbye! It was nice chatting with you. Have a great day!";
-    }
-    
-    // For programming-related questions
-    if (lowerMessage.includes('code') || lowerMessage.includes('programming') || lowerMessage.includes('javascript') || lowerMessage.includes('python')) {
-      return "That's a great programming question! While I'm a simple chatbot, I'd recommend checking official documentation or coding communities for detailed technical help.";
-    }
-    
-    // Generate a contextual response based on message length and content
-    if (message.length > 100) {
-      return `${this.getRandomResponse()} You've shared quite a detailed message. While I'm a simple AI, I appreciate you taking the time to explain your thoughts thoroughly.`;
-    }
-    
-    return `${this.getRandomResponse()} ${message.split(' ').length > 10 ? 'That seems like a complex topic.' : 'That\'s a good question.'} While I'm a basic chatbot, I hope this response is helpful!`;
+    this.genAI = new GoogleGenerativeAI(apiKey || '');
+    this.model = this.genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
   }
 
   async generateResponse(messages: ChatMessage[]): Promise<string> {
-    if (messages.length === 0) {
-      return "Hello! How can I help you today?";
+    const apiKey = process.env.GEMINI_API_KEY;
+    
+    // If no API key, use fallback responses
+    if (!apiKey || apiKey === 'your-gemini-api-key-here') {
+      return this.getFallbackResponse(messages);
     }
 
-    const lastMessage = messages[messages.length - 1];
+    try {
+      // Convert messages to Gemini format
+      const history = messages.slice(0, -1).map(msg => ({
+        role: msg.role === 'assistant' ? 'model' : 'user',
+        parts: [{ text: msg.content }],
+      }));
+
+      // Get the last message
+      const lastMessage = messages[messages.length - 1];
+
+      // Start a chat session
+      const chat = this.model.startChat({
+        history: history,
+        generationConfig: {
+          maxOutputTokens: 2048,
+          temperature: 0.7,
+        },
+      });
+
+      // Send message and get response
+      const result = await chat.sendMessage(lastMessage.content);
+      const response = await result.response;
+      const text = response.text();
+
+      return text || "I apologize, but I couldn't generate a response. Please try again.";
+    } catch (error: any) {
+      console.error("Gemini API Error:", error.message);
+      
+      // Handle specific errors
+      if (error.message?.includes('API_KEY')) {
+        return "⚠️ API key error. Please check your Gemini API key configuration.";
+      }
+      if (error.message?.includes('quota')) {
+        return "⚠️ API quota exceeded. Please try again later or check your API limits.";
+      }
+      
+      return this.getFallbackResponse(messages);
+    }
+  }
+
+  private getFallbackResponse(messages: ChatMessage[]): string {
+    const lastMessage = messages[messages.length - 1]?.content?.toLowerCase() || '';
     
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 500 + Math.random() * 1000));
+    // Basic fallback responses
+    if (lastMessage.includes('hello') || lastMessage.includes('hi')) {
+      return "Hello! I'm your AI assistant. To enable full AI capabilities, please configure your Gemini API key in the server/.env file. You can get a free API key from https://makersuite.google.com/app/apikey";
+    }
+    if (lastMessage.includes('help')) {
+      return "I can help you with various tasks once configured with a Gemini API key. Get your free key from https://makersuite.google.com/app/apikey and add it to server/.env as GEMINI_API_KEY=your-key";
+    }
     
-    return this.generateContextualResponse(lastMessage.content, messages);
+    return "🤖 AI features require a Gemini API key. Get your free key from https://makersuite.google.com/app/apikey and add it to server/.env file.";
   }
 }
 
 export const configureChatService = () => {
-  return new CustomChatService();
+  return new GeminiChatService();
 };
